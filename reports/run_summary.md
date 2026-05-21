@@ -1,5 +1,5 @@
 # VAIntage Brain — Scrape Run Summary
-_Generated: 2026-05-21T07:32:56.842208+00:00_
+_Generated: 2026-05-21T07:39:25.725377+00:00_
 
 **Sources fetched OK:** 8  |  **Sources failed:** 0
 **Engine 1 rules built:** 5
@@ -14,7 +14,7 @@ _Generated: 2026-05-21T07:32:56.842208+00:00_
 | `cms_pub_100_02_ch17` | **OK** | 10 G-codes mentioned | 355,826 | `2c365f78a35c` |
 | `cms_pub_100_04_ch39` | **OK** | 12 G-codes mentioned | 375,532 | `8c0f7934527e` |
 | `ecfr_42_part_8` | **OK** | 25 sections | 104,517 | `0b136a303c87` |
-| `fl_ahca_cbh_handbook` | **OK** | 0 PDF links | 55,838 | `8a7da28c11f2` |
+| `fl_ahca_cbh_handbook` | **OK** | 0 PDF links | 111,676 | `15d18a0d19d3` |
 | `fl_mac_fcso_otp` | **OK** | 0 G-codes mentioned | 172,249 | `aa29afe58719` |
 | `samhsa_tip_63` | **OK** | 0 | 3,427,264 | `e7f4c2e40a5d` |
 
