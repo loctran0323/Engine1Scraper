@@ -1,4 +1,4 @@
-# Engine1Scraper — VAIntage Pathways™ "Brain"
+# LambentDataScrapers — VAIntage Pathways™ "Brain"
 
 Automated ingestion pipeline that scrapes federal & Florida-specific MAT billing
 rules and clinical guidelines, transforms them into the **Engine 1 JSON Rule
