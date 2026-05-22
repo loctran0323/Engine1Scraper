@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from pathlib import Path
 
 from config import (
     ALL_SOURCES,
@@ -31,12 +30,15 @@ from config import (
 from qa import diff_matrix
 from scrapers import (
     AHCAHandbookScraper,
+    CDCICD10ZCodesScraper,
     CMSManualScraper,
     ECFRPart8Scraper,
     FCSOFactSheetScraper,
     MLNBookletScraper,
     NCCIScraper,
     SamhsaTIP63Scraper,
+    SimplyProviderManualScraper,
+    SunshineProviderManualScraper,
 )
 from scrapers.base import BaseScraper, ScrapeResult
 from transformers import build_rule_matrix, chunk_for_rag
@@ -52,6 +54,9 @@ SCRAPER_REGISTRY: dict[str, type[BaseScraper]] = {
     "cms_ncci_edits": NCCIScraper,
     "ecfr_42_part_8": ECFRPart8Scraper,
     "samhsa_tip_63": SamhsaTIP63Scraper,
+    "cdc_icd10_z_codes": CDCICD10ZCodesScraper,
+    "sunshine_provider_manual": SunshineProviderManualScraper,
+    "simply_provider_resources": SimplyProviderManualScraper,
 }
 
 LIVE_MATRIX_PATH = PROCESSED_DIR / "engine1_matrix.live.json"

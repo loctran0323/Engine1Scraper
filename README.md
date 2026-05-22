@@ -129,6 +129,7 @@ Engine1Scraper/
 | `R-FL-03` | AHCA Medicaid | All SUD | HF | SubstanceAbuseModifier | FL AHCA |
 | `R-FL-04` | AHCA Medicaid | H0020 | HD→HG | ModifierSequencer | FL AHCA |
 | `R-FLMAC-01` | Medicare | G2067 | — | PayerBlocker | FCSO |
+| `R-SIMPLY-01` | Simply MCO | COUNSELING | — | CounselingTimeMinimum | Simply Provider Manual |
 
 Federal rules execute **before** Florida-specific overrides, per the addendum.
 
@@ -144,9 +145,9 @@ Federal rules execute **before** Florida-specific overrides, per the addendum.
 | `fl_mac_fcso_otp` | HTML | bi-annually | 1 | ✅ live |
 | `ecfr_42_part_8` | JSON/XML API | ad-hoc | 2 | ✅ live |
 | `samhsa_tip_63` | PDF | bi-annually | 2 | ✅ live |
-| `sunshine_provider_manual` | TBD | monthly | 1 | ⏳ scraper not yet wired |
-| `simply_provider_resources` | TBD | quarterly | 1 | ⏳ scraper not yet wired |
-| `cdc_icd10_z_codes` | TBD | annually | 2 | ⏳ scraper not yet wired |
+| `sunshine_provider_manual` | PDF | monthly | 1 | ✅ live |
+| `simply_provider_resources` | PDF | quarterly | 1 | ✅ live |
+| `cdc_icd10_z_codes` | PDF | annually | 2 | ✅ live |
 | `asam_criteria` | gated | ad-hoc | 2 | 🔒 subscription required |
 
 ## Azure Functions deployment (Phase 5)
@@ -170,14 +171,18 @@ For separate federal-vs-Florida cadences, deploy two Functions with different
 
 ## Known limitations / iterations
 
-- **NCCI parser** filters to known OTP codes; if none appear in the current
-  quarter's ZIP the matrix gets 0 NCCI rules. Easy to widen the code allowlist.
-- **AHCA handbook regex** doesn't currently match the handbook PDF link on the
-  CBH landing page — need to inspect HTML and widen patterns.
-- **42 CFR Part 8 walker** emits some duplicate sections due to nested DIV/SECTION
-  elements; RAG dedup handles it, but the walker could track visited nodes.
-- **`§thnsp;` artifact** in 42 CFR section headings — HTML named entity not
-  resolving in XML parser mode; one-line fix to switch to HTMLParser.
+- **NCCI delta-only**: the CMS landing page links to the quarterly
+  *additions/deletions* zip, not the full PTP table. If CMS makes no OTP edit
+  changes in a given quarter, we get 0 rows for OTP — that's accurate, not a
+  bug. To get the full PTP universe, switch to the full quarterly tables
+  (4 xlsx files, ~2.5M rows total) — needs a streaming xlsx parser.
+- **AHCA modifier extraction**: the MAT-specific AHCA PDFs (Methadone Criteria,
+  PT 2021-25) cover clinical criteria and drug coverage but don't enumerate
+  modifier rules. The R-FL-* rules are hardcoded from the addendum spec; the
+  scraped PDFs serve as diff-tracked source-of-record so changes get flagged.
+- **Sunshine / Simply manuals** describe processes, not code-to-diagnosis maps.
+  R-SUNSHINE-01 will only fire if the manual starts listing specific H-codes
+  alongside required F11.x diagnoses.
 - **ASAM Criteria** is subscription-gated; needs institutional credentials.
 - **Engine 1 latency budget** is 200ms — current matrix is well under that, but
   if the rule count grows, evaluate whether the agent needs an index.

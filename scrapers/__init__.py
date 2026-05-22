@@ -4,6 +4,8 @@ from .samhsa_scraper import ECFRPart8Scraper, SamhsaTIP63Scraper
 from .ahca_scraper import AHCAHandbookScraper
 from .ncci_scraper import NCCIScraper
 from .fl_mac_scraper import FCSOFactSheetScraper
+from .cdc_scraper import CDCICD10ZCodesScraper
+from .mco_scraper import SimplyProviderManualScraper, SunshineProviderManualScraper
 
 __all__ = [
     "BaseScraper",
@@ -15,4 +17,7 @@ __all__ = [
     "AHCAHandbookScraper",
     "NCCIScraper",
     "FCSOFactSheetScraper",
+    "CDCICD10ZCodesScraper",
+    "SimplyProviderManualScraper",
+    "SunshineProviderManualScraper",
 ]

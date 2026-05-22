@@ -13,6 +13,17 @@ import re
 
 from .base import BaseScraper, ScrapeResult
 
+_ECFR_ARTIFACT_RE = re.compile(r"thnsp;")
+
+
+def _clean_ecfr_artifacts(text: str) -> str:
+    """Strip the `thnsp;` literal eCFR ships in some section headings.
+
+    CMS publishing typo for `&thinsp;` (thin space) — affects ~6 of 25 sections
+    in 42 CFR Part 8. Replacing with a regular space keeps the RAG chunks clean.
+    """
+    return _ECFR_ARTIFACT_RE.sub(" ", text)
+
 
 class ECFRPart8Scraper(BaseScraper):
     """42 CFR Part 8 (Medications for Treatment of Opioid Use Disorder).
@@ -62,6 +73,7 @@ class ECFRPart8Scraper(BaseScraper):
 
         root = etree.fromstring(xml_bytes)
         sections: list[dict] = []
+        seen_ids: set[str] = set()  # dedup nested DIV8/SECTION matches
         # eCFR wraps each section in <DIV8 TYPE="SECTION" N="8.x">. Some payloads use
         # lowercase / hierarchical tags — handle both.
         for div in root.iter():
@@ -72,11 +84,16 @@ class ECFRPart8Scraper(BaseScraper):
             if tag == "DIV8" and type_attr and type_attr != "SECTION":
                 continue
             n = div.get("N") or div.get("n") or ""
+            if n and n in seen_ids:
+                continue
+            seen_ids.add(n)
             heading_el = div.find(".//HEAD") if div.find(".//HEAD") is not None else div.find(".//head")
             heading = (heading_el.text or "").strip() if heading_el is not None else ""
-            # Pull all descendant text — eCFR sections are short enough that we
-            # don't need streaming.
             text = " ".join(t.strip() for t in div.itertext() if t and t.strip())
+            # Clean the `thnsp;` artifact that eCFR ships as literal text
+            # (CMS publishing typo for `&thinsp;`). Affects ~6 of 25 sections.
+            heading = _clean_ecfr_artifacts(heading)
+            text = _clean_ecfr_artifacts(text)
             sections.append({"id": n, "label": heading, "text": text})
         return sections
 

@@ -94,17 +94,19 @@ ENGINE1_SOURCES: list[Source] = [
     ),
     Source(
         key="sunshine_provider_manual",
-        name="Sunshine Health (Centene MCO) — Provider Manuals",
-        url="https://www.sunshinehealth.com/providers/resources/provider-manuals.html",
+        name="Sunshine Health (Centene MCO) — Provider Manual",
+        url="https://www.sunshinehealth.com/content/dam/centene/Sunshine/pdfs/Provider%20Manual.pdf",
         cadence="monthly",
         engine="engine1",
+        fetch_mode="pdf",
     ),
     Source(
         key="simply_provider_resources",
-        name="Simply Healthcare — Provider Resources",
-        url="https://provider.simplyhealthcareplans.com/florida-provider/home",
+        name="Simply Healthcare — FL Healthy Kids Provider Manual",
+        url="https://provider.simplyhealthcareplans.com/docs/gpp/FLFL_SMH_FHKProviderManual.pdf",
         cadence="quarterly",
         engine="engine1",
+        fetch_mode="pdf",
     ),
 ]
 
@@ -131,10 +133,11 @@ ENGINE2_SOURCES: list[Source] = [
     ),
     Source(
         key="cdc_icd10_z_codes",
-        name="CDC ICD-10-CM — Z-Codes (SDOH)",
-        url="https://www.cdc.gov/nchs/icd/icd-10-cm/files.html",
+        name="CDC ICD-10-CM — Official Guidelines incl. SDOH Z-Codes (FY 2026)",
+        url="https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM/2026/ICD-10-CM-October-2025-Guidelines.pdf",
         cadence="annually",
         engine="engine2",
+        fetch_mode="pdf",
     ),
     Source(
         key="asam_criteria",

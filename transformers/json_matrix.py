@@ -149,12 +149,53 @@ def _from_fcso(r: ScrapeResult) -> list[dict]:
     ]
 
 
+def _from_sunshine(r: ScrapeResult) -> list[dict]:
+    # Addendum: "Write JSON constraint enforcing an F11.2x (Opioid dependence)
+    # diagnosis presence whenever MAT H-codes are billed."
+    p = r.parsed
+    if not p.get("requires_dx_with_h_codes"):
+        return []
+    return [
+        _rule(
+            "R-SUNSHINE-01",
+            "Sunshine MCO",
+            "H0020",
+            None,
+            "DiagnosisRequired",
+            source_key=r.source_key,
+            extra={
+                "required_dx_prefix": "F11.2",
+                "h_codes_in_scope": p.get("h_codes_referenced", [])[:25],
+            },
+        )
+    ]
+
+
+def _from_simply(r: ScrapeResult) -> list[dict]:
+    # Addendum: "Implement regex scanner for txt_ClinicalNarrative time values;
+    # trigger block/warning if < 15 mins is documented."
+    threshold = r.parsed.get("min_counseling_threshold_minutes")
+    return [
+        _rule(
+            "R-SIMPLY-01",
+            "Simply MCO",
+            "COUNSELING",
+            None,
+            "CounselingTimeMinimum",
+            source_key=r.source_key,
+            extra={"min_minutes": threshold or 15},
+        )
+    ]
+
+
 _DISPATCH = {
     "cms_pub_100_04_ch39": _from_pub_100_04,
     "cms_pub_100_02_ch17": _from_pub_100_02,
     "fl_ahca_cbh_handbook": _from_ahca,
     "cms_ncci_edits": _from_ncci,
     "fl_mac_fcso_otp": _from_fcso,
+    "sunshine_provider_manual": _from_sunshine,
+    "simply_provider_resources": _from_simply,
 }
 
 

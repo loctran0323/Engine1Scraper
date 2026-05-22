@@ -4,3 +4,4 @@ R-FL-02,Managed Medicaid,H0020,POS-58,PointOfCareBlock,fl_ahca_cbh_handbook,{}
 R-FL-03,AHCA Medicaid,ALL_SUD,HF,SubstanceAbuseModifier,fl_ahca_cbh_handbook,{}
 R-FL-04,AHCA Medicaid,H0020,HD>HG,ModifierSequencer,fl_ahca_cbh_handbook,"{""trigger_icd_prefix"": ""O"", ""alt_modifier"": ""HG""}"
 R-FLMAC-01,Medicare,G2067,,PayerBlocker,fl_mac_fcso_otp,"{""enforce_g_codes"": [], ""block_standard_hcpcs"": true}"
+R-SIMPLY-01,Simply MCO,COUNSELING,,CounselingTimeMinimum,simply_provider_resources,"{""min_minutes"": 15}"

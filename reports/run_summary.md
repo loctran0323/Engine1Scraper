@@ -1,22 +1,25 @@
 # VAIntage Brain — Scrape Run Summary
-_Generated: 2026-05-21T07:39:25.725377+00:00_
+_Generated: 2026-05-22T01:23:49.506361+00:00_
 
-**Sources fetched OK:** 8  |  **Sources failed:** 0
-**Engine 1 rules built:** 5
-**Engine 2 RAG chunks:** 1011
+**Sources fetched OK:** 11  |  **Sources failed:** 0
+**Engine 1 rules built:** 6
+**Engine 2 RAG chunks:** 1308
 
 ## Per-source results
 
 | Source | Status | Got | Raw bytes | SHA-256 (first 12) |
 |---|---|---|---|---|
+| `cdc_icd10_z_codes` | **OK** | 0 | 838,632 | `992310dd8323` |
 | `cms_mln_otp_booklet` | **OK** | 13 G-codes mentioned | 3,378,819 | `b03e94ae7ca7` |
 | `cms_ncci_edits` | **OK** | 0 NCCI edits | 170,165 | `a0ce4bf2966c` |
 | `cms_pub_100_02_ch17` | **OK** | 10 G-codes mentioned | 355,826 | `2c365f78a35c` |
 | `cms_pub_100_04_ch39` | **OK** | 12 G-codes mentioned | 375,532 | `8c0f7934527e` |
 | `ecfr_42_part_8` | **OK** | 25 sections | 104,517 | `0b136a303c87` |
-| `fl_ahca_cbh_handbook` | **OK** | 0 PDF links | 111,676 | `15d18a0d19d3` |
-| `fl_mac_fcso_otp` | **OK** | 0 G-codes mentioned | 172,249 | `aa29afe58719` |
+| `fl_ahca_cbh_handbook` | **OK** | 0 | 2,730,740 | `` |
+| `fl_mac_fcso_otp` | **OK** | 0 G-codes mentioned | 172,249 | `2590cede1dd8` |
 | `samhsa_tip_63` | **OK** | 0 | 3,427,264 | `e7f4c2e40a5d` |
+| `simply_provider_resources` | **OK** | 0 | 3,804,954 | `d213e31733a3` |
+| `sunshine_provider_manual` | **OK** | 0 | 2,278,717 | `c5225ed1f5d9` |
 
 ## Engine 1 rules generated
 
@@ -27,6 +30,7 @@ _Generated: 2026-05-21T07:39:25.725377+00:00_
 | R-FL-03 | AHCA Medicaid | ALL_SUD | HF | SubstanceAbuseModifier |
 | R-FL-04 | AHCA Medicaid | H0020 | HD>HG | ModifierSequencer |
 | R-FLMAC-01 | Medicare | G2067 | - | PayerBlocker |
+| R-SIMPLY-01 | Simply MCO | COUNSELING | - | CounselingTimeMinimum |
 
 ## Sample Engine 2 chunks (proof of extraction)
 
@@ -38,6 +42,6 @@ _Generated: 2026-05-21T07:39:25.725377+00:00_
 
 > m an Accreditation Body that has been approved by the Secretary. This subpart and subparts B through D also establish the procedures whereby an entity can apply to become an approved Accreditation Body, and the requirements and general standards for Accreditation Bodies to ensure that OTPs are consistently evaluated for compliance with the Secretary's standards for treatment of OUD with MOUD. (b) …
 
-**ecfr_42_part_8 — 8.2 §thnsp;8.2 Definitions.** (1200 chars)
+**ecfr_42_part_8 — 8.2 § 8.2 Definitions.** (1200 chars)
 
-> §thnsp;8.2 Definitions. The following definitions apply to this part: Accreditation Body or “the Body” means an organization that has been approved by the Secretary in this part to accredit OTPs dispensing MOUD. Accreditation Body application means the application filed with the Secretary for purposes of obtaining approval as an Accreditation Body, as described in § 8.3(b). Accreditation elements …
+> § 8.2 Definitions. The following definitions apply to this part: Accreditation Body or “the Body” means an organization that has been approved by the Secretary in this part to accredit OTPs dispensing MOUD. Accreditation Body application means the application filed with the Secretary for purposes of obtaining approval as an Accreditation Body, as described in § 8.3(b). Accreditation elements mean …
