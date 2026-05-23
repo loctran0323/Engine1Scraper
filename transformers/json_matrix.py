@@ -14,7 +14,7 @@ from typing import Iterable
 
 from scrapers.base import ScrapeResult
 
-RULE_SCHEMA_VERSION = "2026.05.01"
+RULE_SCHEMA_VERSION = "2026.05.22"
 
 
 def _rule(
@@ -25,8 +25,13 @@ def _rule(
     logic_type: str,
     *,
     source_key: str,
+    friendly_message: str,
     extra: dict | None = None,
 ) -> dict:
+    # friendly_message is required per the 2026-05-22 schema bump — it is what
+    # the rule-preview UI shows to a reviewer when they accept/reject a rule.
+    if not friendly_message.strip():
+        raise ValueError(f"{rule_id}: friendly_message is required")
     out = {
         "rule_id": rule_id,
         "payer_type": payer_type,
@@ -34,6 +39,7 @@ def _rule(
         "required_modifier": required_modifier,
         "logic_type": logic_type,
         "source_key": source_key,
+        "friendly_message": friendly_message,
     }
     if extra:
         out["params"] = extra
@@ -43,6 +49,8 @@ def _rule(
 # ---- per-source builders --------------------------------------------------------
 def _from_pub_100_04(r: ScrapeResult) -> list[dict]:
     p = r.parsed
+    window = 7
+    min_in_bundle = p.get("weekly_bundle_min_services", 1)
     return [
         _rule(
             "R-FED-01",
@@ -51,9 +59,15 @@ def _from_pub_100_04(r: ScrapeResult) -> list[dict]:
             None,
             "BundleValidation",
             source_key=r.source_key,
+            friendly_message=(
+                f"Medicare OTP weekly bundle (G2067–G2079) must include at least "
+                f"{min_in_bundle} qualifying service within a {window}-day window. "
+                f"Billing the bundle without an in-window service will be denied "
+                f"per CMS Pub 100-04 Ch 39."
+            ),
             extra={
-                "min_services_in_bundle": p.get("weekly_bundle_min_services", 1),
-                "window_days": 7,
+                "min_services_in_bundle": min_in_bundle,
+                "window_days": window,
                 "g_codes_in_scope": p.get("g_codes_mentioned", []),
             },
         )
@@ -65,6 +79,7 @@ def _from_pub_100_02(r: ScrapeResult) -> list[dict]:
     threshold = p.get("iop_threshold_services")
     if not threshold:
         return []
+    window = p.get("iop_window_days", 7)
     return [
         _rule(
             "R-FED-02",
@@ -73,9 +88,14 @@ def _from_pub_100_02(r: ScrapeResult) -> list[dict]:
             None,
             "IopThresholdGuard",
             source_key=r.source_key,
+            friendly_message=(
+                f"Medicare IOP add-on G0137 requires at least {threshold} qualifying "
+                f"services in a {window}-day window. Below this threshold the claim "
+                f"does not meet IOP medical-necessity criteria in CMS Pub 100-02 Ch 17."
+            ),
             extra={
                 "required_services": threshold,
-                "window_days": p.get("iop_window_days", 7),
+                "window_days": window,
             },
         )
     ]
@@ -93,6 +113,11 @@ def _from_ahca(r: ScrapeResult) -> list[dict]:
             "POS-58",
             "PointOfCareBlock",
             source_key=r.source_key,
+            friendly_message=(
+                "FL Managed Medicaid requires methadone administration (H0020) to be "
+                "billed at Place-of-Service 58 (non-residential SUD facility). Other "
+                "POS values will be rejected by AHCA."
+            ),
         ),
         _rule(
             "R-FL-03",
@@ -101,6 +126,10 @@ def _from_ahca(r: ScrapeResult) -> list[dict]:
             "HF",
             "SubstanceAbuseModifier",
             source_key=r.source_key,
+            friendly_message=(
+                "FL AHCA Medicaid SUD services must carry the HF modifier (substance "
+                "abuse program). Claims missing HF on SUD codes will be denied."
+            ),
         ),
         _rule(
             "R-FL-04",
@@ -109,6 +138,11 @@ def _from_ahca(r: ScrapeResult) -> list[dict]:
             "HD>HG",  # ordering rule: HD must precede HG when pregnancy ICD present
             "ModifierSequencer",
             source_key=r.source_key,
+            friendly_message=(
+                "When H0020 is billed for a pregnant patient (ICD-10 prefix O…), "
+                "modifier HD (pregnant/parenting program) must appear before HG "
+                "(opioid addiction treatment); otherwise use HG alone."
+            ),
             extra={"trigger_icd_prefix": "O", "alt_modifier": "HG"},
         ),
     ]
@@ -126,6 +160,10 @@ def _from_ncci(r: ScrapeResult) -> list[dict]:
                 None,
                 "BundleGuard",
                 source_key=r.source_key,
+                friendly_message=(
+                    f"NCCI PTP edit: {edit['column1']} cannot be billed on the same "
+                    f"day as {edit['column2']} without an appropriate modifier."
+                ),
                 extra={"mutually_exclusive_with": edit["column2"]},
             )
         )
@@ -141,6 +179,10 @@ def _from_fcso(r: ScrapeResult) -> list[dict]:
             None,
             "PayerBlocker",
             source_key=r.source_key,
+            friendly_message=(
+                "FCSO (FL Medicare MAC) accepts only OTP G-codes (G2067–G2079) for "
+                "OTP services. Standard HCPCS/CPT codes will be rejected on OTP claims."
+            ),
             extra={
                 "enforce_g_codes": r.parsed.get("g_codes_mentioned", []),
                 "block_standard_hcpcs": True,
@@ -163,6 +205,11 @@ def _from_sunshine(r: ScrapeResult) -> list[dict]:
             None,
             "DiagnosisRequired",
             source_key=r.source_key,
+            friendly_message=(
+                "Sunshine Health requires an F11.2x (opioid dependence) diagnosis "
+                "on the claim whenever MAT H-codes are billed. Missing diagnosis "
+                "will cause the claim to be denied."
+            ),
             extra={
                 "required_dx_prefix": "F11.2",
                 "h_codes_in_scope": p.get("h_codes_referenced", [])[:25],
@@ -174,7 +221,7 @@ def _from_sunshine(r: ScrapeResult) -> list[dict]:
 def _from_simply(r: ScrapeResult) -> list[dict]:
     # Addendum: "Implement regex scanner for txt_ClinicalNarrative time values;
     # trigger block/warning if < 15 mins is documented."
-    threshold = r.parsed.get("min_counseling_threshold_minutes")
+    threshold = r.parsed.get("min_counseling_threshold_minutes") or 15
     return [
         _rule(
             "R-SIMPLY-01",
@@ -183,7 +230,12 @@ def _from_simply(r: ScrapeResult) -> list[dict]:
             None,
             "CounselingTimeMinimum",
             source_key=r.source_key,
-            extra={"min_minutes": threshold or 15},
+            friendly_message=(
+                f"Simply Healthcare requires documented counseling time of at least "
+                f"{threshold} minutes in the clinical narrative. Shorter sessions "
+                f"will trigger a billing warning and may be denied on audit."
+            ),
+            extra={"min_minutes": threshold},
         )
     ]
 

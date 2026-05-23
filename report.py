@@ -97,7 +97,7 @@ def write_engine1_rules_csv() -> Path:
         w = csv.writer(fh)
         w.writerow(
             ["rule_id", "payer_type", "code", "required_modifier",
-             "logic_type", "source_key", "params_json"]
+             "logic_type", "source_key", "friendly_message", "params_json"]
         )
         for r in rules:
             w.writerow(
@@ -108,6 +108,7 @@ def write_engine1_rules_csv() -> Path:
                     r.get("required_modifier") or "",
                     r["logic_type"],
                     r["source_key"],
+                    r.get("friendly_message", ""),
                     json.dumps(r.get("params", {})),
                 ]
             )
@@ -161,12 +162,13 @@ def write_markdown_digest(rows: list[dict]) -> Path:
 
     if matrix.get("rules"):
         lines += ["", "## Engine 1 rules generated", "",
-                  "| Rule ID | Payer | Code | Modifier | Logic |",
-                  "|---|---|---|---|---|"]
+                  "| Rule ID | Payer | Code | Modifier | Logic | Friendly message |",
+                  "|---|---|---|---|---|---|"]
         for rule in matrix["rules"]:
+            msg = (rule.get("friendly_message") or "-").replace("|", "\\|")
             lines.append(
                 f"| {rule['rule_id']} | {rule['payer_type']} | {rule['code']} "
-                f"| {rule.get('required_modifier') or '-'} | {rule['logic_type']} |"
+                f"| {rule.get('required_modifier') or '-'} | {rule['logic_type']} | {msg} |"
             )
 
     # Sample a few real RAG chunks — proof that text was actually extracted.

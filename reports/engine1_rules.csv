@@ -1,7 +1,8 @@
-rule_id,payer_type,code,required_modifier,logic_type,source_key,params_json
-R-FED-01,Medicare Advantage,G2067,,BundleValidation,cms_pub_100_04_ch39,"{""min_services_in_bundle"": 1, ""window_days"": 7, ""g_codes_in_scope"": [""G2067"", ""G2068"", ""G2069"", ""G2070"", ""G2072"", ""G2073"", ""G2074"", ""G2075"", ""G2076"", ""G2077"", ""G2078"", ""G2079""]}"
-R-FL-02,Managed Medicaid,H0020,POS-58,PointOfCareBlock,fl_ahca_cbh_handbook,{}
-R-FL-03,AHCA Medicaid,ALL_SUD,HF,SubstanceAbuseModifier,fl_ahca_cbh_handbook,{}
-R-FL-04,AHCA Medicaid,H0020,HD>HG,ModifierSequencer,fl_ahca_cbh_handbook,"{""trigger_icd_prefix"": ""O"", ""alt_modifier"": ""HG""}"
-R-FLMAC-01,Medicare,G2067,,PayerBlocker,fl_mac_fcso_otp,"{""enforce_g_codes"": [], ""block_standard_hcpcs"": true}"
-R-SIMPLY-01,Simply MCO,COUNSELING,,CounselingTimeMinimum,simply_provider_resources,"{""min_minutes"": 15}"
+rule_id,payer_type,code,required_modifier,logic_type,source_key,friendly_message,params_json
+R-FED-02,Medicare,G0137,,IopThresholdGuard,cms_pub_100_02_ch17,Medicare IOP add-on G0137 requires at least 9 qualifying services in a 7-day window. Below this threshold the claim does not meet IOP medical-necessity criteria in CMS Pub 100-02 Ch 17.,"{""required_services"": 9, ""window_days"": 7}"
+R-FED-01,Medicare Advantage,G2067,,BundleValidation,cms_pub_100_04_ch39,Medicare OTP weekly bundle (G2067–G2079) must include at least 1 qualifying service within a 7-day window. Billing the bundle without an in-window service will be denied per CMS Pub 100-04 Ch 39.,"{""min_services_in_bundle"": 1, ""window_days"": 7, ""g_codes_in_scope"": [""G2067"", ""G2068"", ""G2069"", ""G2070"", ""G2072"", ""G2073"", ""G2074"", ""G2075"", ""G2076"", ""G2077"", ""G2078"", ""G2079""]}"
+R-FL-02,Managed Medicaid,H0020,POS-58,PointOfCareBlock,fl_ahca_cbh_handbook,FL Managed Medicaid requires methadone administration (H0020) to be billed at Place-of-Service 58 (non-residential SUD facility). Other POS values will be rejected by AHCA.,{}
+R-FL-03,AHCA Medicaid,ALL_SUD,HF,SubstanceAbuseModifier,fl_ahca_cbh_handbook,FL AHCA Medicaid SUD services must carry the HF modifier (substance abuse program). Claims missing HF on SUD codes will be denied.,{}
+R-FL-04,AHCA Medicaid,H0020,HD>HG,ModifierSequencer,fl_ahca_cbh_handbook,"When H0020 is billed for a pregnant patient (ICD-10 prefix O…), modifier HD (pregnant/parenting program) must appear before HG (opioid addiction treatment); otherwise use HG alone.","{""trigger_icd_prefix"": ""O"", ""alt_modifier"": ""HG""}"
+R-FLMAC-01,Medicare,G2067,,PayerBlocker,fl_mac_fcso_otp,FCSO (FL Medicare MAC) accepts only OTP G-codes (G2067–G2079) for OTP services. Standard HCPCS/CPT codes will be rejected on OTP claims.,"{""enforce_g_codes"": [], ""block_standard_hcpcs"": true}"
+R-SIMPLY-01,Simply MCO,COUNSELING,,CounselingTimeMinimum,simply_provider_resources,Simply Healthcare requires documented counseling time of at least 15 minutes in the clinical narrative. Shorter sessions will trigger a billing warning and may be denied on audit.,"{""min_minutes"": 15}"

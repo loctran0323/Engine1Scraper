@@ -17,12 +17,31 @@ from .base import BaseScraper, ScrapeResult
 # section, these patterns still light up — the structure of *what* they say
 # changes much slower than *where* it lives.
 RE_G_CODE = re.compile(r"\b(G20[67]\d)\b")  # G2067..G2079
-RE_IOP_G0137 = re.compile(r"G0137[\s\S]{0,400}?(\d+)\s+(?:distinct\s+)?services?", re.I)
+# CMS prose says "minimum of nine services" (spelled) in some places and
+# digits in others — accept both.
+_NUMBER_WORD = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+RE_IOP_G0137 = re.compile(
+    rf"G0137[\s\S]{{0,400}}?({_NUMBER_WORD})\s+(?:distinct\s+)?services?",
+    re.I,
+)
 RE_WEEKLY_THRESHOLD = re.compile(
-    r"(?:at\s+least|minimum\s+of)\s+(\d+)\s+services?\s+(?:per|every|in\s+a)\s+7[-\s]?day",
+    rf"(?:at\s+least|minimum\s+of)\s+({_NUMBER_WORD})\s+services?\s+(?:per|every|in\s+a)\s+7[-\s]?day",
     re.I,
 )
 RE_TAKEHOME = re.compile(r"(take[-\s]?home|unsupervised)\s+(?:dose|medication)", re.I)
+
+
+_WORD_TO_INT = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+}
+
+
+def _to_int(token: str) -> int:
+    token = token.strip().lower()
+    if token in _WORD_TO_INT:
+        return _WORD_TO_INT[token]
+    return int(token)
 
 
 class _CMSPdfBase(BaseScraper):
@@ -54,7 +73,7 @@ class CMSManualScraper(_CMSPdfBase):
             iop_match = RE_IOP_G0137.search(text)
             return {
                 "doc": "Pub 100-02 Ch 17",
-                "iop_threshold_services": int(iop_match.group(1)) if iop_match else None,
+                "iop_threshold_services": _to_int(iop_match.group(1)) if iop_match else None,
                 "iop_window_days": 7 if iop_match else None,
                 "g_codes_mentioned": sorted(set(RE_G_CODE.findall(text))),
                 "raw_excerpt": text[:2000],
@@ -63,7 +82,7 @@ class CMSManualScraper(_CMSPdfBase):
         weekly_match = RE_WEEKLY_THRESHOLD.search(text)
         return {
             "doc": "Pub 100-04 Ch 39",
-            "weekly_bundle_min_services": int(weekly_match.group(1)) if weekly_match else 1,
+            "weekly_bundle_min_services": _to_int(weekly_match.group(1)) if weekly_match else 1,
             "g_codes_mentioned": sorted(set(RE_G_CODE.findall(text))),
             "raw_excerpt": text[:2000],
         }

@@ -1,8 +1,8 @@
 # VAIntage Brain — Scrape Run Summary
-_Generated: 2026-05-22T01:23:49.506361+00:00_
+_Generated: 2026-05-23T01:27:01.260896+00:00_
 
 **Sources fetched OK:** 11  |  **Sources failed:** 0
-**Engine 1 rules built:** 6
+**Engine 1 rules built:** 7
 **Engine 2 RAG chunks:** 1308
 
 ## Per-source results
@@ -23,14 +23,15 @@ _Generated: 2026-05-22T01:23:49.506361+00:00_
 
 ## Engine 1 rules generated
 
-| Rule ID | Payer | Code | Modifier | Logic |
-|---|---|---|---|---|
-| R-FED-01 | Medicare Advantage | G2067 | - | BundleValidation |
-| R-FL-02 | Managed Medicaid | H0020 | POS-58 | PointOfCareBlock |
-| R-FL-03 | AHCA Medicaid | ALL_SUD | HF | SubstanceAbuseModifier |
-| R-FL-04 | AHCA Medicaid | H0020 | HD>HG | ModifierSequencer |
-| R-FLMAC-01 | Medicare | G2067 | - | PayerBlocker |
-| R-SIMPLY-01 | Simply MCO | COUNSELING | - | CounselingTimeMinimum |
+| Rule ID | Payer | Code | Modifier | Logic | Friendly message |
+|---|---|---|---|---|---|
+| R-FED-02 | Medicare | G0137 | - | IopThresholdGuard | Medicare IOP add-on G0137 requires at least 9 qualifying services in a 7-day window. Below this threshold the claim does not meet IOP medical-necessity criteria in CMS Pub 100-02 Ch 17. |
+| R-FED-01 | Medicare Advantage | G2067 | - | BundleValidation | Medicare OTP weekly bundle (G2067–G2079) must include at least 1 qualifying service within a 7-day window. Billing the bundle without an in-window service will be denied per CMS Pub 100-04 Ch 39. |
+| R-FL-02 | Managed Medicaid | H0020 | POS-58 | PointOfCareBlock | FL Managed Medicaid requires methadone administration (H0020) to be billed at Place-of-Service 58 (non-residential SUD facility). Other POS values will be rejected by AHCA. |
+| R-FL-03 | AHCA Medicaid | ALL_SUD | HF | SubstanceAbuseModifier | FL AHCA Medicaid SUD services must carry the HF modifier (substance abuse program). Claims missing HF on SUD codes will be denied. |
+| R-FL-04 | AHCA Medicaid | H0020 | HD>HG | ModifierSequencer | When H0020 is billed for a pregnant patient (ICD-10 prefix O…), modifier HD (pregnant/parenting program) must appear before HG (opioid addiction treatment); otherwise use HG alone. |
+| R-FLMAC-01 | Medicare | G2067 | - | PayerBlocker | FCSO (FL Medicare MAC) accepts only OTP G-codes (G2067–G2079) for OTP services. Standard HCPCS/CPT codes will be rejected on OTP claims. |
+| R-SIMPLY-01 | Simply MCO | COUNSELING | - | CounselingTimeMinimum | Simply Healthcare requires documented counseling time of at least 15 minutes in the clinical narrative. Shorter sessions will trigger a billing warning and may be denied on audit. |
 
 ## Sample Engine 2 chunks (proof of extraction)
 

@@ -20,6 +20,15 @@ RE_H_CODE = re.compile(r"\b(H\d{4})\b")
 RE_COUNSELING_TIME = re.compile(
     r"(\d{1,3})\s*(?:minute|min)\b.{0,80}?(?:counsel|therap|session)", re.I
 )
+# Word/Office "Quick Parts" template placeholder on cover pages. When present
+# it dominates raw_excerpt and makes the report look broken — strip it.
+RE_TEMPLATE_PLACEHOLDER = re.compile(
+    r"\[\s*Grab your reader.s attention[\s\S]*?\]\s*", re.I
+)
+
+
+def _strip_template(text: str) -> str:
+    return RE_TEMPLATE_PLACEHOLDER.sub("", text).lstrip()
 
 
 class SunshineProviderManualScraper(BaseScraper):
@@ -28,7 +37,7 @@ class SunshineProviderManualScraper(BaseScraper):
     def parse(self) -> ScrapeResult:
         payload = self.fetch_bytes(self.source.url)
         raw_path, digest = self._persist_raw(payload, suffix=".pdf")
-        text = self.pdf_to_text(payload)
+        text = _strip_template(self.pdf_to_text(payload))
 
         f11_hits = sorted(set(RE_F11.findall(text)))
         h_codes = sorted(set(RE_H_CODE.findall(text)))
@@ -55,7 +64,7 @@ class SimplyProviderManualScraper(BaseScraper):
     def parse(self) -> ScrapeResult:
         payload = self.fetch_bytes(self.source.url)
         raw_path, digest = self._persist_raw(payload, suffix=".pdf")
-        text = self.pdf_to_text(payload)
+        text = _strip_template(self.pdf_to_text(payload))
 
         counseling_thresholds = [
             int(m) for m in RE_COUNSELING_TIME.findall(text) if m.isdigit()
