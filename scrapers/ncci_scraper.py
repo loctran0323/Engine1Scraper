@@ -124,7 +124,14 @@ class NCCIScraper(BaseScraper):
         warnings: list[str] = []
         seen: set[tuple[str, str, str]] = set()
         for url in parts:
-            payload = self.fetch_bytes(url)
+            # A part listed on the page can 404 (CMS sometimes lists an f4 link
+            # for a quarter that only published f1-f3). One missing part must not
+            # take down the whole table — skip it and keep the parts that resolve.
+            try:
+                payload = self.fetch_bytes(url)
+            except Exception as exc:  # noqa: BLE001 — per-part resilience
+                warnings.append(f"Skipped part (fetch failed): {url} ({exc})")
+                continue
             raw_path, digest = self._persist_raw(payload, suffix=".zip")
             part_digests.append(digest)
             first_raw_path = first_raw_path or str(raw_path)
@@ -248,13 +255,48 @@ class NCCIScraper(BaseScraper):
 # Medicaid NCCI PTP zips. CMS posts the Medicaid edit files on a separate page
 # with a different naming convention from the Medicare practitioner table — the
 # H0020 + 80305 (and other H-code) unbundling edits live here, not in the
-# Medicare file. We match practitioner PTP zips and prefer them over the
-# outpatient-hospital set (which Engine 1 doesn't evaluate). Naming has drifted
-# across quarters, so the match is deliberately loose: any .zip whose link text
-# mentions Medicaid + PTP. MUE (medically-unlikely-edit) files are excluded.
+# Medicare file. Engine 1 evaluates only the *practitioner* PTP set, so we
+# exclude the outpatient-hospital set, the durable-medical-equipment (DME) set,
+# and MUE (medically-unlikely-edit) files.
 RE_MEDICAID_PTP = re.compile(
-    r"(?=.*medicaid)(?=.*ptp)(?!.*\bmue\b)(?!.*outpatient).*\.zip", re.I
+    r"(?=.*medicaid)(?=.*ptp)(?=.*practitioner)"
+    r"(?!.*\bmue\b)(?!.*outpatient)(?!.*hospital)(?!.*durable)(?!.*\bdme\b)"
+    r".*\.zip",
+    re.I,
 )
+# Quarter/year appear in either order across quarters
+# (e.g. "medicaid-ncci-2026-q3-..." vs "medicaid-ncci-q2-2026-..."), so parse
+# them independently rather than assuming a fixed layout.
+RE_YEAR = re.compile(r"(20\d{2})")
+RE_QTR = re.compile(r"q([1-4])", re.I)
+
+
+def _medicaid_release_key(url: str) -> tuple[int, int]:
+    """(year, quarter) parsed from a Medicaid PTP zip URL; 0s if absent."""
+    y = RE_YEAR.search(url)
+    q = RE_QTR.search(url)
+    return (int(y.group(1)) if y else 0, int(q.group(1)) if q else 0)
+
+
+def _select_medicaid_ptp_zips(hrefs: list[str], base_url: str) -> list[str]:
+    """Resolved URLs for the newest-quarter practitioner Medicaid PTP zip(s).
+
+    Filters to practitioner PTP (excluding DME/hospital/MUE), keeps only the most
+    recent (year, quarter), and de-dupes. Returns [] when none match.
+    """
+    matches = [h for h in hrefs if RE_MEDICAID_PTP.search(h)]
+    if not matches:
+        return []
+    best = max(_medicaid_release_key(h) for h in matches)
+    chosen = [h for h in matches if _medicaid_release_key(h) == best]
+    urls: list[str] = []
+    seen: set[str] = set()
+    for h in chosen:
+        url = _resolve_cms_href(h, base_url)
+        if url not in seen:
+            seen.add(url)
+            urls.append(url)
+    return urls
 
 
 class MedicaidNCCIScraper(NCCIScraper):
@@ -272,16 +314,9 @@ class MedicaidNCCIScraper(NCCIScraper):
         soup = BeautifulSoup(html, "lxml")
         hrefs = [a["href"] for a in soup.find_all("a", href=True)]
 
-        # Collect every Medicaid PTP zip, resolve any AMA-license wrapper, dedupe.
-        zip_urls: list[str] = []
-        seen_urls: set[str] = set()
-        for h in hrefs:
-            if not RE_MEDICAID_PTP.search(h):
-                continue
-            url = _resolve_cms_href(h, self.source.url)
-            if url not in seen_urls:
-                seen_urls.add(url)
-                zip_urls.append(url)
+        # Newest-quarter practitioner PTP zip(s) only — excludes DME/hospital/MUE
+        # and older quarters, with the AMA-license wrapper resolved.
+        zip_urls = _select_medicaid_ptp_zips(hrefs, self.source.url)
 
         if not zip_urls:
             return ScrapeResult(
@@ -300,7 +335,11 @@ class MedicaidNCCIScraper(NCCIScraper):
         first_raw_path = ""
         warnings: list[str] = []
         for url in zip_urls:
-            payload = self.fetch_bytes(url)
+            try:
+                payload = self.fetch_bytes(url)
+            except Exception as exc:  # noqa: BLE001 — per-zip resilience
+                warnings.append(f"Skipped zip (fetch failed): {url} ({exc})")
+                continue
             raw_path, digest = self._persist_raw(payload, suffix=".zip")
             part_digests.append(digest)
             first_raw_path = first_raw_path or str(raw_path)

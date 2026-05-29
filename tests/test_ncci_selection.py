@@ -12,11 +12,23 @@ import unittest
 
 from scrapers.ncci_scraper import (
     RE_DELTA_PRACTITIONER,
+    _medicaid_release_key,
     _resolve_cms_href,
     _select_full_table_parts,
+    _select_medicaid_ptp_zips,
 )
 
 BASE = "https://www.cms.gov/medicare/coding-billing/ncci/ptp-edits"
+MCD_BASE = "https://www.cms.gov/medicare/coding-billing/ncci-medicaid/medicaid-ncci-edit-files"
+
+# Real hrefs from the live Medicaid edit-files page (2026-05): newest practitioner
+# quarter, an older practitioner quarter (note the q/year order flips), and the
+# DME set that must NOT be selected.
+MCD_HREFS = [
+    "/files/zip/medicaid-ncci-2026-q3-ptp-edits-practitioner-services.zip",
+    "/files/zip/medicaid-ncci-2026-q3-ptp-edits-durable-medical-equipment.zip",
+    "/files/zip/medicaid-ncci-q2-2026-ptp-edits-practitioner-services.zip",
+]
 
 # Real hrefs from the live page: q1 + q2, hospital + practitioner, plus the delta.
 LIVE_HREFS = [
@@ -65,6 +77,33 @@ class FullTableSelection(unittest.TestCase):
     def test_delta_regex_matches_only_delta(self):
         self.assertTrue(RE_DELTA_PRACTITIONER.search(LIVE_HREFS[0]))
         self.assertFalse(RE_DELTA_PRACTITIONER.search(LIVE_HREFS[4]))
+
+
+class MedicaidPtpSelection(unittest.TestCase):
+    def test_selects_only_newest_quarter_practitioner_zip(self):
+        urls = _select_medicaid_ptp_zips(MCD_HREFS, MCD_BASE)
+        self.assertEqual(len(urls), 1)
+        self.assertIn("2026-q3", urls[0])
+        self.assertIn("practitioner", urls[0])
+
+    def test_excludes_dme_and_older_quarter(self):
+        urls = _select_medicaid_ptp_zips(MCD_HREFS, MCD_BASE)
+        joined = " ".join(urls)
+        self.assertNotIn("durable-medical-equipment", joined)
+        self.assertNotIn("q2-2026", joined)
+
+    def test_release_key_handles_both_date_orderings(self):
+        self.assertEqual(_medicaid_release_key("x-2026-q3-y.zip"), (2026, 3))
+        self.assertEqual(_medicaid_release_key("x-q2-2026-y.zip"), (2026, 2))
+
+    def test_empty_when_no_practitioner_zip(self):
+        self.assertEqual(
+            _select_medicaid_ptp_zips(
+                ["/files/zip/medicaid-ncci-2026-q3-ptp-edits-durable-medical-equipment.zip"],
+                MCD_BASE,
+            ),
+            [],
+        )
 
 
 if __name__ == "__main__":

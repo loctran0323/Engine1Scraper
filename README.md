@@ -276,9 +276,13 @@ For separate federal-vs-Florida cadences, deploy two Functions with different
   *Medicare* practitioner PTP file has **no edits for the OTP bundle G-codes**
   (G2067–G2080) and **no H-codes at all** — H-codes are Medicaid. So the
   "H0020 + 80305" unbundling conflict is **not** in this file; it lives in the
-  separate **Medicaid NCCI edit file** (`cms_ncci_medicaid`, now in `config.py`).
-  Next step to actually surface H0020 edits: generalize `NCCIScraper` to that
-  Medicaid URL (same zip/xlsx shape).
+  separate **Medicaid NCCI edit file**, now scraped by `MedicaidNCCIScraper`
+  (`cms_ncci_medicaid`). It selects the **newest-quarter practitioner** PTP zip
+  only (excludes DME/hospital/MUE and older quarters) and reuses the Medicare
+  extraction path. Both NCCI scrapers are now resilient to a part/zip that 404s —
+  a missing file is skipped with a warning instead of crashing the run (the
+  Medicare full table sometimes lists an `f4` link for a quarter that only
+  published `f1`–`f3`).
 - **AHCA modifier extraction**: the MAT-specific AHCA PDFs (Methadone Criteria,
   PT 2021-25) cover clinical criteria and drug coverage but don't enumerate
   modifier rules. The R-FL-* rules are hardcoded from the addendum spec; the
